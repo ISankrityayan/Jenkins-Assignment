@@ -1,0 +1,63 @@
+pipeline {
+    agent any
+ 
+    tools {
+        // Ensures Maven is available for building and testing the project
+        maven 'Maven' // Ensure Maven is named and configured in Jenkins' Global Tool Configuration
+    }
+ 
+   
+ 
+    stages {
+        stage('Initialize') {
+            steps {
+                git 'https://github.com/ISankrityayan/Jenkins-Assignment.git'
+                echo 'Starting build and test process'
+            }
+        }
+        stage('Build') {
+            steps {
+                // Clean the project and install dependencies without running tests
+                bat 'mvn clean package'
+            }
+        }
+        stage('Test') {
+            steps {
+                // Run unit tests and Cucumber tests
+                bat 'mvn test'
+            }
+            
+             post {
+                always {
+                    // Archive Extent Reports
+                    archiveArtifacts 'target/surefire-reports/*.xml'
+                    archiveArtifacts 'reports/extentreport.html'
+                    // Publish Extent Reports using the publishHTML step
+                    publishHTML([
+                        allowMissing: false,
+                        alwaysLinkToLastBuild: false,
+                        keepAll: true,
+                        reportDir: 'reports',
+                        reportFiles: 'extentreport.html',
+                        reportName: 'Extent Report'
+                    ])
+                }
+            }
+        }
+    }
+ 
+    post {
+        always {
+            // This will always execute at the end of the pipeline execution
+            echo 'Pipeline execution complete!'
+        }
+        success {
+            // Actions to take if the entire pipeline runs successfully
+            echo 'Build and tests completed successfully.'
+        }
+        failure {
+            // Actions to take if the pipeline fails at any stage
+            echo 'An error occurred during pipeline execution.'
+        }
+    }
+}
